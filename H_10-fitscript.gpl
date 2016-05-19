@@ -1,0 +1,141 @@
+set term post color enhanced 14
+set output "H10.eps"
+
+set title "10 atoms Hydrogen chain computed with STO-6G with HF, CIPSI and FN-DMC"
+set xlabel "Lattice constant (angstrom)"
+set ylabel "Energy (Ha)"
+
+
+#HaToEv = 27.2114
+HaToEv =1 
+GPatoAu = 1.0 / 29421.033
+bohrtoang = 0.5291772
+
+bindingExp=0
+latticeExp=0
+
+
+
+#Hartree Fock
+HFkp1            = 3.00163
+HFe01            = -5.65412
+HFv01            = 0.212396
+HFk01            = 2.82519
+HFt1(HFv01,HFk01) = HFv01*HFk01
+HFt2(HFkp1) = HFkp1-1.0
+HFt3(x1,HFv01) = (x1/HFv01)**(1/3.0)
+HFt4(x1,HFv01,HFkp1) = exp(-3.0/2.0*HFt2(HFkp1)*(-1.0+HFt3(x1,HFv01)))
+t5(HFkp1) = HFt2(HFkp1)**2
+t6(HFkp1) = 1.0/t5(HFkp1)
+dHFt3(xx,v0x) = (1/3.0)*(xx**2*v0x)**(-1/3.0)
+dHFt4(xx,v0x,kpx) = -1.5*HFt2(kpx)*dHFt3(xx,v0x)*HFt4(xx,v0x,kpx)
+#set fit errorvariables
+f(x,HFv0,HFk0,HFkp,HFe0)=-2.0*HFt1(HFv0,HFk0)*HFt4(x,HFv0,HFkp)*(3.0*HFt3(x,HFv0)*HFkp-3.0*HFt3(x,HFv0)+5.0-3.0*HFkp)*t6(HFkp)+4.0*HFt1(HFv0,HFk0)*t6(HFkp)+HFe0
+ fit   f(x,HFv01,HFk01,HFkp1,HFe01) "Energy_H_10_Final.txt" u (0.25*$1**3):2 via HFkp1,HFe01,HFv01,HFk01
+
+isolatedHF=0.471039054183489
+bindingHF = f(0.25*(100000000)**3,HFv01,HFk01,HFkp1,HFe01)
+#bindingHF=isolatedHF 
+
+HFbinding = sprintf("Hartree Fock Binding energy (from fit) = %5.3f eV \nBinding energy (from isolated) = %5.3f eV ", (HFe01-(10*bindingHF))*HaToEv, -(10*isolatedHF-HFe01)*HaToEv)
+#HFbinding = sprintf("Hartree Fock Binding energy (from isolated) = %5.3f eV ", (HFe01-10*isolatedHF)*HaToEv)
+HFlattice = sprintf("Hartree Fock Equilibrium Distance = %6.3f Angstrom ", (4*HFv01)**(1.0/3.0) )
+
+
+
+#CI1M
+CI1Mkp1         = 3.00163 
+CI1Me01         = -5.65412 
+CI1Mv01         = 0.212396 
+CI1Mk01         = 2.82519 
+CI1Mt1(CI1Mv01,CI1Mk01) = CI1Mv01*CI1Mk01
+CI1Mt2(CI1Mkp1) = CI1Mkp1-1.0
+CI1Mt3(x1,CI1Mv01) = (x1/CI1Mv01)**(1/3.0)
+CI1Mt4(x1,CI1Mv01,CI1Mkp1) = exp(-3.0/2.0*CI1Mt2(CI1Mkp1)*(-1.0+CI1Mt3(x1,CI1Mv01)))
+t5(CI1Mkp1) = CI1Mt2(CI1Mkp1)**2
+t6(CI1Mkp1) = 1.0/t5(CI1Mkp1)
+dCI1Mt3(xx,v0x) = (1/3.0)*(xx**2*v0x)**(-1/3.0)
+dCI1Mt4(xx,v0x,kpx) = -1.5*CI1Mt2(kpx)*dCI1Mt3(xx,v0x)*CI1Mt4(xx,v0x,kpx)
+
+set fit errorvariables
+
+j(x,CI1Mv0,CI1Mk0,CI1Mkp,CI1Me0)=-2.0*CI1Mt1(CI1Mv0,CI1Mk0)*CI1Mt4(x,CI1Mv0,CI1Mkp)*(3.0*CI1Mt3(x,CI1Mv0)*CI1Mkp-3.0*CI1Mt3(x,CI1Mv0)+5.0-3.0*CI1Mkp)*t6(CI1Mkp)+4.0*CI1Mt1(CI1Mv0,CI1Mk0)*t6(CI1Mkp)+CI1Me0
+
+ fit  j(x,CI1Mv01,CI1Mk01,CI1Mkp1,CI1Me01) "Energy_H_10_Final.txt" u (0.25*$1**3):3 via CI1Mkp1,CI1Me01,CI1Mv01,CI1Mk01
+
+isolatedCI1M =0.471039054183489
+#bindingCI1M = isolatedCI1M 
+bindingCI1M = j(0.25*(10000000)**3,CI1Mv01,CI1Mk01,CI1Mkp1,CI1Me01)
+
+CI1Mbinding = sprintf("CIPSI 1M Det Binding energy (from fit) = %5.3f +/- %4.4f eV \nBinding energy (from isolated) = %5.3f +/- %4.4f eV ", (CI1Me01-bindingCI1M)*HaToEv, CI1Me01_err*HaToEv, -(2*isolatedCI1M-CI1Me01)*HaToEv,  CI1Me01_err*HaToEv)
+#CI1Mbinding = sprintf("CIPSI 1M Det Binding energy (from isolated) = %5.3f eV ", (CI1Me01-10*isolatedCI1M)*HaToEv)
+CI1Mlattice = sprintf("CIPSI 1M Det Equilibrium Distance = %6.3f Angstrom ", (4*CI1Mv01)**(1.0/3.0) )
+
+
+
+
+
+#CI1M-QMC
+CI1MDMCkp1      = 3.00163 
+CI1MDMCe01      = -5.65412
+CI1MDMCv01      = 0.212396
+CI1MDMCk01      = 2.82519 
+CI1MDMCt1(CI1MDMCv01,CI1MDMCk01) = CI1MDMCv01*CI1MDMCk01
+CI1MDMCt2(CI1MDMCkp1) = CI1MDMCkp1-1.0
+CI1MDMCt3(x1,CI1MDMCv01) = (x1/CI1MDMCv01)**(1/3.0)
+CI1MDMCt4(x1,CI1MDMCv01,CI1MDMCkp1) = exp(-3.0/2.0*CI1MDMCt2(CI1MDMCkp1)*(-1.0+CI1MDMCt3(x1,CI1MDMCv01)))
+t5(CI1MDMCkp1) = CI1MDMCt2(CI1MDMCkp1)**2
+t6(CI1MDMCkp1) = 1.0/t5(CI1MDMCkp1)
+dCI1MDMCt3(xx,v0x) = (1/3.0)*(xx**2*v0x)**(-1/3.0)
+dCI1MDMCt4(xx,v0x,kpx) = -1.5*CI1MDMCt2(kpx)*dCI1MDMCt3(xx,v0x)*CI1MDMCt4(xx,v0x,kpx)
+
+set fit errorvariables
+
+k(x,CI1MDMCv0,CI1MDMCk0,CI1MDMCkp,CI1MDMCe0)=-2.0*CI1MDMCt1(CI1MDMCv0,CI1MDMCk0)*CI1MDMCt4(x,CI1MDMCv0,CI1MDMCkp)*(3.0*CI1MDMCt3(x,CI1MDMCv0)*CI1MDMCkp-3.0*CI1MDMCt3(x,CI1MDMCv0)+5.0-3.0*CI1MDMCkp)*t6(CI1MDMCkp)+4.0*CI1MDMCt1(CI1MDMCv0,CI1MDMCk0)*t6(CI1MDMCkp)+CI1MDMCe0
+
+ fit  k(x,CI1MDMCv01,CI1MDMCk01,CI1MDMCkp1,CI1MDMCe01) "Energy_H_10_Final.txt" u (0.25*$1**3):4:5 via CI1MDMCkp1,CI1MDMCe01,CI1MDMCv01,CI1MDMCk01
+
+isolatedCI1MDMC=-0.500
+isolatedCI1MDMC_err=0.000048
+bindingCI1MDMC = k(0.25*(10000000)**3,CI1MDMCv01,CI1MDMCk01,CI1MDMCkp1,CI1MDMCe01)
+#bindingCI1MDMC =isolatedCI1MDMC 
+
+CI1MDMCbinding = sprintf("DMC - 1M Det Binding energy (from fit) = %5.3f +/- %4.4f eV \nBinding energy (from isolated) = %5.3f +/- %4.4f eV \nExperimental Binding = %5.3f eV", (CI1MDMCe01-bindingCI1MDMC)*HaToEv, CI1MDMCe01_err*HaToEv, (CI1MDMCe01-10*isolatedCI1MDMC)*HaToEv,  isolatedCI1MDMC_err*HaToEv, bindingExp)
+
+#CI1MDMCbinding = sprintf("DMC - 1M Det Binding energy (from isolated) = %5.3f +/- %4.4f eV \nExperimental Binding = %5.3f eV", (CI1MDMCe01-10*isolatedCI1MDMC)*HaToEv,  isolatedCI1MDMC_err*HaToEv, bindingExp)
+CI1MDMClattice = sprintf("DMC - 1M Det Equilibrium Distance = %6.3f +/- %4.4f Angstrom \nExperimental Bond Length= %6.3f Angstrom", (4*CI1MDMCv01)**(1.0/3.0), (CI1MDMCv01_err)**(1.0/3.0) ,latticeExp)
+
+
+
+#set label HFbinding at graph 0.40,0.62
+#set label CI1Mbinding at graph 0.40,0.55
+#set label CI1MDMCbinding at graph 0.4,0.48
+
+
+#set label HFlattice at graph 0.40,0.35
+#set label CI1Mlattice at graph 0.40,0.31
+#set label CI1MDMClattice at graph 0.40,0.27
+
+#set label HFDMClattice at graph 0.1,0.5
+#set label HFDMCbinding at graph 0.1,0.80
+
+
+
+
+ plot "Energy_H_10_Final.txt" u 1:($2-2*isolatedHF)*HaToEv  ps 1 pt 5 lc rgb "red" ti "Hartree Fock", \
+                   (f(0.25*(x)**3,HFv01,HFk01,HFkp1,HFe01)-2*isolatedHF)*HaToEv lw 2 lc rgb "red" notitle,\
+      "Energy_H_10_Final.txt" u 1:($3-2*isolatedCI1M)*HaToEv  ps 1 pt 3 lc rgb "blue" ti "CIPSI 1M Det",\
+                   (j(0.25*(x)**3,CI1Mv01,CI1Mk01,CI1Mkp1,CI1Me01)-2*isolatedCI1M)*HaToEv lw 2 lc rgb "blue"  notitle, \
+      "Energy_H_10_Final.txt" u 1:($4-2*isolatedCI1MDMC)*HaToEv:($5)*HaToEv w e lc rgb "black" ps 2 pt 1 ti "DMC 1M Det",\
+                   (k(0.25*(x)**3,CI1MDMCv01,CI1MDMCk01,CI1MDMCkp1,CI1MDMCe01)-2*isolatedCI1MDMC)*HaToEv lw 3 lc rgb "black"  notitle
+
+
+
+
+
+
+
+
+
+
+
